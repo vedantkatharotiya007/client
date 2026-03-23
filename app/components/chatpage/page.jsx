@@ -65,18 +65,51 @@ export default function ChatMessages({
                 max-w-[70%] px-3 py-2 rounded-2xl text-sm shadow-sm
                 ${
                   isMe
-                    ? "bg-indigo-600 text-white rounded-br-sm"
+                    ? "bg-gray-200 text-gray-900 rounded-br-sm  border"
                     : "bg-white text-gray-900 rounded-bl-sm border"
                 }
               `}
             >
-              <p>{msg.text}</p>
+
+  {/* IMAGE */}
+ {msg.file && msg.file.match(/\.(jpg|jpeg|png|gif)$/) && (
+      <img src={`${process.env.NEXT_PUBLIC_API_URL}${msg.file}`} className="w-40 rounded" />
+    )}
+
+    {msg.file && msg.file.match(/\.(mp4|webm)$/) && (
+      <video src={`${process.env.NEXT_PUBLIC_API_URL}${msg.file}`} controls className="w-40" />
+    )}
+
+    {msg.file && msg.file.match(/\.(mp3|wav)$/) && (
+      <audio src={`${process.env.NEXT_PUBLIC_API_URL}${msg.file}`} controls />
+    )}
+
+    {msg.file && msg.file.endsWith(".pdf") && (
+      <a href={`${process.env.NEXT_PUBLIC_API_URL}${msg.file}`} target="_blank" className="text-white-600 underline">
+        📄 Open PDF
+      </a>
+    )}
+
+    {msg.file && msg.file.endsWith(".txt") && (
+      <a href={`${process.env.NEXT_PUBLIC_API_URL}${msg.file}`} target="_blank" className="text-white-600 underline">
+        📄 View Text File
+      </a>
+    )}
+
+    {msg.file && msg.file.endsWith(".zip") && (
+      <a href={`${process.env.NEXT_PUBLIC_API_URL}${msg.file}`} download className="text-white-600 underline">
+        📦 Download ZIP
+      </a>
+    )}
+  {msg.text && (
+<p >{msg.text}</p>
+)}
 
               {/* 🕒 Time */}
               <p
                 className={`
                   text-[10px] mt-1 text-right
-                  ${isMe ? "text-indigo-200" : "text-gray-400"}
+                  ${isMe ? "text-gray-600" : "text-gray-400"}
                 `}
               >
                 {new Date(msg.createdAt).toLocaleTimeString([], {

@@ -1,15 +1,18 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-export default function VideoCall({ socket, userid, myId, isCaller, onEnd,user }) {
+export default function VideoCall({ socket, userid, myId, isCaller, onEnd,user,chatid }) {
 
  
 const [micOn, setMicOn] = useState(true);
+const [videoOn , setVideoOn] = useState(true);
+const [currentoffer, setCurrentoffer] = useState(null);
   const localVideo = useRef(null);
   const localStream = useRef(null);
   const pcs = useRef({});
   const iceQueue = useRef({});
   const started = useRef(false);
+
 
   const [videos, setVideos] = useState({});
 const toggleMic = async () => {
@@ -30,6 +33,27 @@ const toggleMic = async () => {
   Object.values(pcs.current).forEach((pc) => {
     const sender = pc.getSenders().find(s => s.track?.kind === "audio");
     if (sender) sender.track.enabled = !micOn;
+  });
+
+};
+const toggleVideo = async () => {
+  if (!localStream.current) return;
+
+  let videoTrack = localStream.current.getVideoTracks()[0];
+  if (!videoTrack) return;
+  
+  if (videoOn) {
+    videoTrack.enabled = false;
+    setVideoOn(false);
+  } else {
+    videoTrack.enabled = true;
+    setVideoOn(true);
+  }
+
+
+  Object.values(pcs.current).forEach((pc) => {
+    const sender = pc.getSenders().find(s => s.track?.kind === "video");
+    if (sender) sender.track.enabled = !videoOn;
   });
 
 };
@@ -155,6 +179,7 @@ const toggleMic = async () => {
   // =========================
   const callUser = async (userId) => {
 
+
     const pc = await createPeer(userId);
 
     const offer = await pc.createOffer();
@@ -166,7 +191,7 @@ const toggleMic = async () => {
       fromUserId: myId,
       offer
     });
-
+setCurrentoffer({...offer,userId:offer});
     console.log("Offer sent to:", userId);
 
   };
@@ -270,6 +295,7 @@ const toggleMic = async () => {
   useEffect(() => {
 
     if (!socket) return;
+  
     if(isCaller === true){
         console.log("User accepted call:", userid);
 
@@ -328,7 +354,7 @@ socket.off("call-accepted");
   Object.values(pcs.current).forEach(pc => pc.close());
   pcs.current = {};
 
-  // stop camera & mic
+  
   if (localStream.current) {
     localStream.current.getTracks().forEach(track => track.stop());
     localStream.current = null;
@@ -338,8 +364,12 @@ socket.off("call-accepted");
   setVideos({});
   iceQueue.current = {};
   started.current = false;
+console.log("Call ended");
+console.log(myId);
+console.log(chatid);
 
-  socket.emit("end-call", { user });
+
+  socket.emit("end-caller", { myId,chatid });
 
   onEnd();
 };
@@ -352,9 +382,7 @@ useEffect(() => {
   return () => window.removeEventListener("resize", handleResize);
 }, []);
 
-  // =========================
-  // UI
-  // =========================
+
  
   return (
 <div className="w-full h-screen bg-gray-900 flex flex-col md:flex-row">
@@ -402,9 +430,14 @@ useEffect(() => {
   {micOn ? "🎤" : "🔇"}
 </button>
  
-  <button className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full hover:bg-gray-600 transition">
-    🖥
-  </button>
+   <button
+  onClick={toggleVideo}
+  className={`flex items-center justify-center w-12 h-12 rounded-full transition ${
+    videoOn ? "bg-gray-700 hover:bg-gray-600" : "bg-red-600 hover:bg-red-700"
+  }`}
+>
+  {videoOn ? "📷" : "🚫"}
+</button>
 </div>
   </div>
 

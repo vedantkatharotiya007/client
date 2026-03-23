@@ -30,10 +30,21 @@ const [selectedUsers, setSelectedUsers] = useState([]);
   const [calluser,setcalluser]=useState(null);
   const[uid,setuid]=useState([]);
   const [onwait, setonwait] = useState(false);
+  const [chatid, setchatid] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+
   var { user } = useUser();
 
 
   const [input, setinput] = useState("");
+  const handleFileChange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  console.log("Selected file:", file);
+
+  setSelectedFile(file);
+};
   useEffect(() => {
     socket.connect();
     socket.emit("user",{mongouid});
@@ -51,7 +62,8 @@ const [selectedUsers, setSelectedUsers] = useState([]);
  
    setonwait(false);
    setuid(userId);
-    setInCall(true) 
+    setInCall(true)
+    setIsCaller(true);
  
    };
    socket.on("call-accepted", handleAccepted);
@@ -72,6 +84,7 @@ setonwait(true);
   setcalluser(filteredUsers);
 
   setIsCaller(true);
+  setchatid(selectedFriend.chatid);
 
   socket.emit("call-user", {
     toUserId: filteredUsers,
@@ -79,7 +92,8 @@ setonwait(true);
     url: user?.imageUrl,
     fromUserId: mongouid,
     callType: type,
-    users: filteredUsers
+    users: filteredUsers,
+    chatid: selectedFriend.chatid
   });
 
 };;
@@ -100,11 +114,15 @@ useEffect(() => {
 }, []);
 const acceptCall = () => {
   socket.emit("accept-call", {
-    toUserId: incomingCall.fromUserId
+    toUserId: incomingCall.fromUserId,
+    users:incomingCall.users,
+    chatId:incomingCall.chatid
   });
   
   setInCall(true);
+  setIsCaller(false);
   setIncomingCall(null);
+  setchatid(incomingCall.chatid);
 };
 
 const rejectCall = () => {
@@ -124,7 +142,7 @@ if(userscall.length > 1){
 const endCall = () => {
   socket.emit("end-call", {
     users:selectedFriend.members? selectedFriend.members : selectedFriend.user._id,
-    toUserId:mongouid
+    toUserId:mongouid,
   });
   setInCall(false);
   setonwait(false);
@@ -233,25 +251,35 @@ console.log("hii",chatId);
   }; 
     }, [socket]);
   const handle=async()=>{
-  
-    if(input===""){
-      return alert("Please enter a message");
-    }
-    console.log("enter");
-    
-    let data={
-      userId:user.id,
-      friend:selectedFriend,
-      message:input,
-    }
-  
-   let res=await fetcher("/api/chat/addmessage", {
+  if (!input && !selectedFile) {
+    return alert("Enter message or select file");
+  }
+
+  const formData = new FormData();
+
+  formData.append("userId", user.id);
+  formData.append("friend", JSON.stringify(selectedFriend));
+  formData.append("msg", input);
+
+  if (selectedFile) {
+    formData.append("file", selectedFile);
+  }
+
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/addmessage`, {
       method: "POST",
-      body: {data},
+      body: formData,
     });
-    
-    console.log(res);
+
+    const data = await res.json();
+    console.log(data);
+
     setinput("");
+    setSelectedFile(null);
+
+  } catch (err) {
+    console.log(err);
+  }
     
   }
   useEffect(() => {
@@ -509,20 +537,50 @@ console.log(res);
   onLoadMore={""}
 />
           </div>
-
+{selectedFile && (
+  <div className="px-3 pb-2 text-sm text-gray-600 flex items-center gap-2">
+    📄 {selectedFile.name}
+    <button
+      onClick={() => setSelectedFile(null)}
+      className="text-red-500"
+    >
+      ❌
+    </button>
+  </div>
+)}
           {/* ✍️ Input */}
-          <div className="p-3 bg-white border-t flex gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setinput(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none"
-            />
-            <button onClick={handle} className="bg-black text-white px-4 rounded-lg">
-              Send
-            </button>
-          </div>
+          <div className="p-3 bg-white border-t flex items-center gap-2">
+            
+
+  {/* 📎 File Upload Button */}
+  <label className="cursor-pointer bg-gray-200 px-3 py-2 rounded-lg hover:bg-gray-300">
+    📎
+    <input
+      type="file"
+      accept="image/*,video/*,audio/*"
+      className="hidden"
+      onChange={handleFileChange}
+    />
+  </label>
+
+  {/* ✍️ Text Input */}
+  <input
+    type="text"
+    value={input}
+    onChange={(e) => setinput(e.target.value)}
+    placeholder="Type a message..."
+    className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none"
+  />
+
+  {/* 🚀 Send Button */}
+  <button
+    onClick={handle}
+    className="bg-black text-white px-4 py-2 rounded-lg"
+  >
+    Send
+  </button>
+
+</div>
         </>
       )}
     </main>
@@ -548,6 +606,7 @@ userid={uid}
   user={calluser}
   onEnd={() => setInCall(false)}
  onwait={onwait}
+ chatid={chatid}
 />
  </div>
 )}
