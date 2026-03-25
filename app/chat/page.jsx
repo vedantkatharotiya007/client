@@ -32,6 +32,7 @@ const [selectedUsers, setSelectedUsers] = useState([]);
   const [onwait, setonwait] = useState(false);
   const [chatid, setchatid] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
 
   var { user } = useUser();
 
@@ -39,6 +40,20 @@ const [selectedUsers, setSelectedUsers] = useState([]);
   const [input, setinput] = useState("");
   const [aiinput, setaiinput] = useState("");
 
+  const fetchSuggestions = async () => {
+  const res = await fetcher("/api/chatgpt/ai/suggest", {
+    method: "POST",
+    body:{messages: messages.slice(-5)},
+  });
+
+  
+  setSuggestions(res.suggestions);
+};
+useEffect(() => {
+  if (messages.length > 0) {
+    fetchSuggestions();
+  }
+}, [messages]);
   const handleAIReply = async () => {
   if (!aiinput) return;
 
@@ -582,6 +597,17 @@ console.log(res);
    Ask AI 🤖
   </button>
 
+</div>
+<div className="px-3 pb-2 flex gap-2 overflow-x-auto">
+  {suggestions.map((s, i) => (
+    <button
+      key={i}
+      onClick={() => setinput(s)}
+      className="bg-gray-200 text-sm px-3 py-1 rounded-full hover:bg-gray-300"
+    >
+      {s}
+    </button>
+  ))}
 </div>
           {/* ✍️ Input */}
           <div className="p-3 bg-white border-t flex items-center gap-2">
