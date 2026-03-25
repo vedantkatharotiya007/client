@@ -37,6 +37,19 @@ const [selectedUsers, setSelectedUsers] = useState([]);
 
 
   const [input, setinput] = useState("");
+  const [aiinput, setaiinput] = useState("");
+
+  const handleAIReply = async () => {
+  if (!aiinput) return;
+
+  const res = await fetcher("/api/chatgpt/ai", {
+    method: "POST",
+    body: { message: aiinput },
+  });
+
+
+  setaiinput(res.reply); 
+};
   const handleFileChange = (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -548,10 +561,31 @@ console.log(res);
     </button>
   </div>
 )}
+
           {/* ✍️ Input */}
           <div className="p-3 bg-white border-t flex items-center gap-2">
-            
+      
+  {/* ✍️ Text Input */}
+  <input
+    type="text"
+    value={aiinput}
+    onChange={(e) => setaiinput(e.target.value)}
+    placeholder="Type a message..."
+    className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none"
+  />
 
+ 
+  <button
+    onClick={handleAIReply}
+    className="bg-black text-white px-4 py-2 rounded-lg"
+  >
+   Ask AI 🤖
+  </button>
+
+</div>
+          {/* ✍️ Input */}
+          <div className="p-3 bg-white border-t flex items-center gap-2">
+      
   {/* 📎 File Upload Button */}
   <label className="cursor-pointer bg-gray-200 px-3 py-2 rounded-lg hover:bg-gray-300">
     📎
