@@ -3,11 +3,12 @@ import CallButtons from "../components/call/CallButtons";
 import Link from "next/link";
 
 import { useUser } from "@clerk/nextjs";
+import VoiceRecorder from "../components/voicerecoding/page";
 import Image from "next/image";
 import { Search } from "lucide-react";
 import { fetcher } from "@/lib/fetcher";
 import { socket } from "@/lib/socket";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useRef } from "react";
 import ChatMessages from "../components/chatpage/page";
 import IncomingCall from "../components/call/IncomingCall";
 import VideoCall from "../components/call/VideoCall";
@@ -579,7 +580,11 @@ console.log(res);
 
           {/* ✍️ Input */}
           <div className="p-3 bg-white border-t flex items-center gap-2">
-      
+      <VoiceRecorder
+  onSend={(file) => {
+    setSelectedFile(file); // reuse your existing upload system
+  }}
+/>
   {/* ✍️ Text Input */}
   <input
     type="text"
@@ -602,7 +607,7 @@ console.log(res);
   {suggestions.map((s, i) => (
     <button
       key={i}
-      onClick={() => setinput(s)}
+      onClick={() => setinput(s.split(".")[1])}
       className="bg-gray-200 text-sm px-3 py-1 rounded-full hover:bg-gray-300"
     >
       {s}
@@ -657,7 +662,7 @@ console.log(res);
     {/* Video Call Screen */}
   {inCall && (
     <div className={`absolute inset-0 z-50
-      md:static md:flex-1 flex flex-col bg-gray-900`}>
+      lg:static lg:flex-1 flex flex-col bg-gray-900`}>
 <VideoCall 
   socket={socket}
 userid={uid}

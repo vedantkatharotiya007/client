@@ -12,9 +12,68 @@ const [currentoffer, setCurrentoffer] = useState(null);
   const pcs = useRef({});
   const iceQueue = useRef({});
   const started = useRef(false);
-
+const [isSharing, setIsSharing] = useState(false);
+const screenStream = useRef(null);
 
   const [videos, setVideos] = useState({});
+  const startScreenShare = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: true
+    });
+
+    screenStream.current = stream;
+
+    const screenTrack = stream.getVideoTracks()[0];
+
+    // replace track in all peers
+    Object.values(pcs.current).forEach((pc) => {
+      const sender = pc.getSenders().find(s => s.track?.kind === "video");
+      if (sender) sender.replaceTrack(screenTrack);
+    });
+
+    // show on local preview
+    if (localVideo.current) {
+      localVideo.current.srcObject = stream;
+    }
+
+    setIsSharing(true);
+
+    // auto stop when user clicks "Stop sharing"
+    screenTrack.onended = () => {
+      stopScreenShare();
+    };
+
+  } catch (err) {
+    console.log("Screen share error:", err);
+  }
+};
+const stopScreenShare = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true
+    });
+
+    localStream.current = stream;
+
+    const videoTrack = stream.getVideoTracks()[0];
+
+    Object.values(pcs.current).forEach((pc) => {
+      const sender = pc.getSenders().find(s => s.track?.kind === "video");
+      if (sender) sender.replaceTrack(videoTrack);
+    });
+
+    if (localVideo.current) {
+      localVideo.current.srcObject = stream;
+    }
+
+    setIsSharing(false);
+
+  } catch (err) {
+    console.log("Error stopping screen share:", err);
+  }
+};
 const toggleMic = async () => {
   if (!localStream.current) return;
 
@@ -437,6 +496,22 @@ useEffect(() => {
   }`}
 >
   {videoOn ? "📷" : "🚫"}
+</button>
+<button
+  onClick={() => {
+    if (isSharing) {
+      stopScreenShare();
+    } else {
+      startScreenShare();
+    }
+  }}
+  className={`flex items-center justify-center w-12 h-12 rounded-full transition ${
+    isSharing 
+      ? "bg-blue-600 hover:bg-blue-700 text-white" 
+      : "bg-gray-700 hover:bg-gray-600"
+  }`}
+>
+  {isSharing ? "🛑" : "🖥️"}
 </button>
 </div>
   </div>
